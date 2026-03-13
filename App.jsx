@@ -1,0 +1,324 @@
+import React, { useState, useMemo, useEffect } from 'react';
+import { 
+  Users, 
+  Search, 
+  Filter, 
+  Send, 
+  CheckCircle, 
+  AlertCircle, 
+  Clock, 
+  ChevronDown,
+  Mail,
+  FileText,
+  BarChart3,
+  X,
+  Bell,
+  Settings
+} from 'lucide-react';
+
+// メインコンポーネント
+export default function App() {
+  // モックデータ: 社員リスト（実務でよくある項目を設定）
+  const [employees, setEmployees] = useState([
+    { id: 1, name: '佐藤 健太', email: 'sato@example.com', dept: '営業部', status: '未受診', lastResult: 'A', lastDate: '2025/04/10' },
+    { id: 2, name: '鈴木 一郎', email: 'suzuki@example.com', dept: '開発部', status: '受診済', lastResult: 'B', lastDate: '2025/03/15' },
+    { id: 3, name: '高橋 花子', email: 'takahashi@example.com', dept: '人事部', status: '未受診', lastResult: 'C', lastDate: '2025/04/05' },
+    { id: 4, name: '田中 太郎', email: 'tanaka@example.com', dept: '営業部', status: '未受診', lastResult: 'A', lastDate: '2025/04/12' },
+    { id: 5, name: '伊藤 直美', email: 'ito@example.com', dept: '総務部', status: '要再検査', lastResult: 'D', lastDate: '2025/03/01' },
+    { id: 6, name: '渡辺 誠', email: 'watanabe@example.com', dept: '開発部', status: '予約済', lastResult: 'B', lastDate: '2025/04/22' },
+    { id: 7, name: '山本 裕子', email: 'yamamoto@example.com', dept: 'マーケティング部', status: '未受診', lastResult: 'A', lastDate: '2025/04/08' },
+    { id: 8, name: '中村 俊介', email: 'nakamura@example.com', dept: '営業部', status: '受診済', lastResult: 'A', lastDate: '2025/03/20' },
+  ]);
+
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterStatus, setFilterStatus] = useState('すべて');
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [isSending, setIsSending] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+
+  // 検索とフィルターのロジック
+  const filteredEmployees = useMemo(() => {
+    return employees.filter(emp => {
+      const matchesSearch = emp.name.includes(searchTerm) || emp.dept.includes(searchTerm) || emp.email.includes(searchTerm);
+      const matchesStatus = filterStatus === 'すべて' || emp.status === filterStatus;
+      return matchesSearch && matchesStatus;
+    });
+  }, [employees, searchTerm, filterStatus]);
+
+  // 全選択・解除
+  const toggleSelectAll = () => {
+    if (selectedIds.length === filteredEmployees.length && filteredEmployees.length > 0) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(filteredEmployees.map(emp => emp.id));
+    }
+  };
+
+  // 個別選択
+  const toggleSelect = (id) => {
+    setSelectedIds(prev => 
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
+  // メール一括送信シミュレーション
+  const handleBulkSend = () => {
+    if (selectedIds.length === 0) return;
+    setIsSending(true);
+    
+    // 送信中の演出（1.5秒）
+    setTimeout(() => {
+      setIsSending(false);
+      setShowToast(true);
+      setSelectedIds([]);
+      // 4秒後にトーストを消す
+      setTimeout(() => setShowToast(false), 4000);
+    }, 1500);
+  };
+
+  // ステータスバッジのスタイル定義
+  const getStatusBadge = (status) => {
+    const base = "px-2.5 py-1 rounded-full text-xs font-bold flex items-center gap-1 w-fit ";
+    switch (status) {
+      case '受診済': return <span className={base + "bg-green-100 text-green-700"}><CheckCircle size={12}/>受診済</span>;
+      case '未受診': return <span className={base + "bg-red-100 text-red-700"}><AlertCircle size={12}/>未受診</span>;
+      case '予約済': return <span className={base + "bg-blue-100 text-blue-700"}><Clock size={12}/>予約済</span>;
+      case '要再検査': return <span className={base + "bg-amber-100 text-amber-700"}><AlertCircle size={12}/>要再検査</span>;
+      default: return <span className={base + "bg-gray-100 text-gray-700"}>{status}</span>;
+    }
+  };
+
+  // 判定スコアのカラー定義
+  const getResultColor = (result) => {
+    const colors = {
+      'A': 'text-blue-600 bg-blue-50',
+      'B': 'text-green-600 bg-green-50',
+      'C': 'text-amber-600 bg-amber-50',
+      'D': 'text-red-600 bg-red-50',
+    };
+    return colors[result] || 'text-slate-600 bg-slate-50';
+  };
+
+  return (
+    <div className="flex h-screen bg-slate-50 font-sans text-slate-900 overflow-hidden">
+      {/* サイドバー（デスクトップ用） */}
+      <aside className="w-64 bg-white border-r border-slate-200 hidden lg:flex flex-col">
+        <div className="p-6 flex items-center gap-3">
+          <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-200">
+            <CheckCircle size={24} />
+          </div>
+          <span className="text-xl font-black tracking-tight text-indigo-900">HealthCloud</span>
+        </div>
+        
+        <nav className="flex-1 px-4 py-4 space-y-1">
+          <div className="flex items-center gap-3 bg-indigo-50 text-indigo-700 p-3 rounded-lg font-bold cursor-pointer transition-all">
+            <Users size={20} />
+            <span>社員管理</span>
+          </div>
+          <div className="flex items-center gap-3 text-slate-500 hover:bg-slate-50 p-3 rounded-lg transition-colors cursor-pointer">
+            <BarChart3 size={20} />
+            <span>受診率レポート</span>
+          </div>
+          <div className="flex items-center gap-3 text-slate-500 hover:bg-slate-50 p-3 rounded-lg transition-colors cursor-pointer">
+            <Mail size={20} />
+            <span>送信履歴</span>
+          </div>
+          <div className="flex items-center gap-3 text-slate-500 hover:bg-slate-50 p-3 rounded-lg transition-colors cursor-pointer">
+            <Settings size={20} />
+            <span>システム設定</span>
+          </div>
+        </nav>
+
+        <div className="p-4 border-t border-slate-100">
+          <div className="bg-slate-900 rounded-2xl p-4 text-white text-center">
+            <p className="text-[10px] text-slate-400 mb-2 font-bold uppercase tracking-widest">Interactive Demo</p>
+            <button className="w-full bg-indigo-600 hover:bg-indigo-500 py-2.5 rounded-xl text-sm font-bold transition-all active:scale-95 shadow-lg shadow-indigo-900/20">
+              製品デモを予約する
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      {/* メインエリア */}
+      <main className="flex-1 flex flex-col min-w-0">
+        {/* ヘッダー */}
+        <header className="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-8 sticky top-0 z-10">
+          <div className="flex items-center gap-3">
+            <h2 className="text-xl font-black text-slate-800 tracking-tight">社員受診ステータス</h2>
+            <span className="bg-indigo-100 text-indigo-700 text-xs font-black px-2.5 py-1 rounded-full">
+              {filteredEmployees.length}名
+            </span>
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="relative hidden md:block">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+              <input 
+                type="text" 
+                placeholder="名前や部署で検索..."
+                className="pl-10 pr-4 py-2 bg-slate-100 border-transparent rounded-full text-sm w-64 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            <div className="w-10 h-10 rounded-full bg-slate-200 border-2 border-white shadow-sm flex items-center justify-center text-slate-600 font-bold overflow-hidden cursor-pointer">
+              <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Admin" alt="User" />
+            </div>
+          </div>
+        </header>
+
+        {/* コンテンツエリア */}
+        <div className="flex-1 overflow-y-auto p-4 md:p-8">
+          {/* KPIサマリー */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm">
+              <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1">受診率</p>
+              <div className="flex items-baseline gap-2">
+                <span className="text-3xl font-black text-slate-900">72%</span>
+                <span className="text-green-500 text-xs font-bold">↑ 12%</span>
+              </div>
+            </div>
+            <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm border-l-4 border-l-red-500">
+              <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1">未受診者</p>
+              <span className="text-3xl font-black text-red-500">24名</span>
+            </div>
+            <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm border-l-4 border-l-amber-500">
+              <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1">要再検査</p>
+              <span className="text-3xl font-black text-amber-500">3名</span>
+            </div>
+            <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm border-l-4 border-l-indigo-500">
+              <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1">平均スコア</p>
+              <span className="text-3xl font-black text-indigo-600">A-</span>
+            </div>
+          </div>
+
+          {/* ツールバー */}
+          <div className="bg-white p-4 rounded-3xl border border-slate-200 shadow-sm mb-6 flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                <select 
+                  className="pl-9 pr-10 py-2.5 bg-slate-50 border-none rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 appearance-none cursor-pointer outline-none"
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                >
+                  <option value="すべて">全ての状況</option>
+                  <option value="受診済">受診済</option>
+                  <option value="未受診">未受診</option>
+                  <option value="予約済">予約済</option>
+                  <option value="要再検査">要再検査</option>
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
+              </div>
+            </div>
+
+            <button 
+              onClick={handleBulkSend}
+              disabled={selectedIds.length === 0 || isSending}
+              className={`flex items-center gap-2 px-6 py-2.5 rounded-2xl font-black transition-all shadow-lg ${
+                selectedIds.length > 0 
+                ? 'bg-indigo-600 text-white shadow-indigo-100 hover:bg-indigo-700 active:scale-95' 
+                : 'bg-slate-100 text-slate-300 cursor-not-allowed shadow-none'
+              }`}
+            >
+              {isSending ? (
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+              ) : (
+                <Send size={18} />
+              )}
+              {isSending ? '送信中...' : `選択した${selectedIds.length}名に一括メール`}
+            </button>
+          </div>
+
+          {/* テーブル */}
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm border-collapse">
+                <thead>
+                  <tr className="bg-slate-50/50 border-b border-slate-100">
+                    <th className="px-6 py-5 w-12 text-center">
+                      <input 
+                        type="checkbox" 
+                        className="w-5 h-5 rounded-lg border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer" 
+                        checked={selectedIds.length === filteredEmployees.length && filteredEmployees.length > 0}
+                        onChange={toggleSelectAll}
+                      />
+                    </th>
+                    <th className="px-6 py-5 font-black text-slate-400 uppercase tracking-widest text-[10px]">氏名 / メール</th>
+                    <th className="px-6 py-5 font-black text-slate-400 uppercase tracking-widest text-[10px]">部署</th>
+                    <th className="px-6 py-5 font-black text-slate-400 uppercase tracking-widest text-[10px] text-center">前回判定</th>
+                    <th className="px-6 py-5 font-black text-slate-400 uppercase tracking-widest text-[10px]">ステータス</th>
+                    <th className="px-6 py-5 font-black text-slate-400 uppercase tracking-widest text-[10px]">最終受診日</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {filteredEmployees.length > 0 ? (
+                    filteredEmployees.map((emp) => (
+                      <tr key={emp.id} className={`hover:bg-indigo-50/20 transition-colors group ${selectedIds.includes(emp.id) ? 'bg-indigo-50/40' : ''}`}>
+                        <td className="px-6 py-4 text-center">
+                          <input 
+                            type="checkbox" 
+                            className="w-5 h-5 rounded-lg border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer" 
+                            checked={selectedIds.includes(emp.id)}
+                            onChange={() => toggleSelect(emp.id)}
+                          />
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex flex-col">
+                            <span className="font-bold text-slate-800">{emp.name}</span>
+                            <span className="text-slate-400 text-[10px]">{emp.email}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-slate-500 font-medium">
+                          {emp.dept}
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex justify-center">
+                            <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm font-black border border-slate-100 shadow-sm ${getResultColor(emp.lastResult)}`}>
+                              {emp.lastResult}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          {getStatusBadge(emp.status)}
+                        </td>
+                        <td className="px-6 py-4 text-slate-400 text-xs">
+                          {emp.lastDate}
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="6" className="px-6 py-20 text-center">
+                        <div className="flex flex-col items-center gap-3 text-slate-300">
+                          <Users size={64} strokeWidth={1} />
+                          <p className="text-lg font-bold">対象の社員が見つかりません</p>
+                          <button onClick={() => {setSearchTerm(''); setFilterStatus('すべて');}} className="text-indigo-600 font-black hover:underline text-sm">全て表示する</button>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      {/* 完了通知トースト */}
+      {showToast && (
+        <div className="fixed bottom-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-8 py-5 rounded-3xl shadow-2xl flex items-center gap-4 animate-in slide-in-from-bottom-10 z-50 border border-white/10">
+          <div className="bg-green-500 p-1.5 rounded-full text-white">
+            <CheckCircle size={20} />
+          </div>
+          <div>
+            <p className="font-black text-sm">一括メール送信を完了しました</p>
+            <p className="text-slate-400 text-xs">対象社員へ受診勧奨通知を配信しました。</p>
+          </div>
+          <button onClick={() => setShowToast(false)} className="ml-4 p-1 hover:bg-white/10 rounded-full transition-colors">
+            <X size={18} />
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
